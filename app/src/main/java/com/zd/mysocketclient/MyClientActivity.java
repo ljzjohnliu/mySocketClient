@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.zd.mysocketclient.util.WifiInfoUtil;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,6 +32,7 @@ public class MyClientActivity extends AppCompatActivity {
     private Button mSendBtn;
     private Button mStartConnectBtn;
     private String ipStr;
+    private TextView mReceveMesFromServicerText;
     @Override
     public void onCreate( Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +49,8 @@ public class MyClientActivity extends AppCompatActivity {
 
         mStartConnectBtn = findViewById(R.id.start_connect_btn);
 
+        mReceveMesFromServicerText = findViewById(R.id.receve_message_from_service__text);
+
         if (mIsWifiEnable) {
             String ssidStr = WifiInfoUtil.getSSID(this);
             if (!TextUtils.isEmpty(ssidStr)) {
@@ -60,7 +64,7 @@ public class MyClientActivity extends AppCompatActivity {
             }
         }
 
-        initView();
+//        initView();
 
         mSendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -83,11 +87,13 @@ public class MyClientActivity extends AppCompatActivity {
     private void connectService(){
         try {
 //            socket = new Socket(ipStr, 9999);
-            ipStr="192.168.1.104";
+            ipStr = "192.168.1.104";
             socket = new Socket(ipStr, 9999);
-            Log.i("Android", "与服务器建立连接：" + socket);
+            Log.i("zhengdan", "与服务器建立连接：" + socket);
             String str = "与服务器建立连接：" + socket;
-            Toast.makeText(MyClientActivity.this,str,Toast.LENGTH_LONG).show();
+            Toast.makeText(MyClientActivity.this, str, Toast.LENGTH_LONG).show();
+            initView(socket);
+
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -96,6 +102,9 @@ public class MyClientActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * 发送消息给服务端
+     */
     public void sendToServiceMessage(){
         try {
             // socket.getInputStream()
@@ -112,32 +121,25 @@ public class MyClientActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    private void initView(){
+    private void initView(final Socket socket){
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    socket = new Socket(ipStr, 30000);
-                    // socket.setSoTimeout(10000);//设置10秒超时
-                    Log.i("Android", "与服务器建立连接：" + socket);
-                    String str = "与服务器建立连接：" + socket;
-                    Toast.makeText(MyClientActivity.this,str,Toast.LENGTH_LONG).show();
-                    BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    String line = br.readLine();
-                    Log.i("Android", "与服务器建立连接：" + line);
-                    String linestr = "与服务器建立连接：" + line;
-                    Toast.makeText(MyClientActivity.this,linestr,Toast.LENGTH_LONG).show();
-                    Message msg = new Message();
-                    msg.what = 1;
-                    msg.obj = line;
-                    handler.sendMessage(msg);
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
+                    DataInputStream reader;
+                    try {
+                        // 获取读取流
+                        reader = new DataInputStream(socket.getInputStream());
+                        Log.e("zhengdan", "*等待服务端输入*");
+                        // 读取数据
+                        String msg = reader.readUTF();
+                        Log.e("zhengdan", "获取到服务端的信息：" + msg);
+                        Message mMessage = new Message();
+                        mMessage.what = 1;
+                        mMessage.obj = msg;
+                        handler.sendMessage(mMessage);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
             }
         }).start();
 
@@ -148,7 +150,9 @@ public class MyClientActivity extends AppCompatActivity {
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             if (msg.what == 1){
-//                textView.setText("这是来自服务器的数据:"+msg.obj.toString());
+                String info = msg.obj.toString();
+                mReceveMesFromServicerText.setText("这是来自服务器的数据:"+msg.obj.toString());
+                Toast.makeText(MyClientActivity.this, "收到服务端消息  " + info, Toast.LENGTH_LONG).show();
             }
         }
     };

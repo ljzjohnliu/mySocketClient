@@ -1,39 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.socket.client">
+
     <uses-permission android:name="android.permission.INTERNET"/>
-
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-
     <!-- 获取WIFI信息状态的权限 -->
-
-
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-
     <!-- 获取网络状态改变的权限 -->
-
-
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-
     <uses-permission android:name="android.permission.CAMERA"/>
-
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-
     <uses-permission android:name="android.permission.BLUETOOTH"/>
-
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -48,7 +33,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.socket.client.MyClientActivity"></activity>
+        <activity android:name="com.socket.client.MyClientActivity"/>
     </application>
 
 </manifest>

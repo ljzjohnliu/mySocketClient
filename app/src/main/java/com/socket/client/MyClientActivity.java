@@ -66,8 +66,6 @@ public class MyClientActivity extends AppCompatActivity {
             }
         }
 
-//        initView();
-
         mSendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -89,6 +87,7 @@ public class MyClientActivity extends AppCompatActivity {
         try {
             ipStr = "192.168.43.153";
             socket = new Socket(ipStr, 9999);
+//            socket.setSoTimeout(50000);
             Log.d(TAG, "与服务器建立连接：" + socket);
             String str = "与服务器建立连接：" + socket;
 //            Toast.makeText(MyClientActivity.this, str, Toast.LENGTH_LONG).show();
@@ -100,8 +99,10 @@ public class MyClientActivity extends AppCompatActivity {
             }
             initView(socket);
         } catch (UnknownHostException e) {
+            Log.e(TAG, "connectService: UnknownHostException e = " + e);
             e.printStackTrace();
         } catch (IOException e) {
+            Log.e(TAG, "connectService: IOException e = " + e);
             e.printStackTrace();
         }
     }
@@ -129,6 +130,7 @@ public class MyClientActivity extends AppCompatActivity {
             }
             Toast.makeText(MyClientActivity.this, "发送消息", Toast.LENGTH_LONG).show();
         } catch (IOException e) {
+            Log.e(TAG, "sendToServiceMessage: e = " + e);
             e.printStackTrace();
         }
     }
@@ -139,17 +141,21 @@ public class MyClientActivity extends AppCompatActivity {
             public void run() {
                 DataInputStream reader;
                 try {
-                    // 获取读取流
-                    reader = new DataInputStream(socket.getInputStream());
-                    Log.d(TAG, "*等待服务端输入*");
-                    // 读取数据
-                    String msg = reader.readUTF();
-                    Log.d(TAG, "获取到服务端的信息：" + msg);
-                    Message mMessage = new Message();
-                    mMessage.what = 1;
-                    mMessage.obj = msg;
-                    handler.sendMessage(mMessage);
+                    while(true) {
+                        // 获取读取流
+                        reader = new DataInputStream(socket.getInputStream());
+                        Log.d(TAG, "initView, *等待服务端输入*");
+                        // 读取数据
+                        String msg = reader.readUTF();
+                        Log.d(TAG, "initView, 获取到服务端的信息：" + msg);
+                        Message mMessage = new Message();
+                        mMessage.what = 1;
+                        mMessage.obj = msg;
+                        handler.sendMessage(mMessage);
+                    }
+
                 } catch (IOException e) {
+                    Log.d(TAG, "initView, run: e = " + e);
                     e.printStackTrace();
                 }
             }

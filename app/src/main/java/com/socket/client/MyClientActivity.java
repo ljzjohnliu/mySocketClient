@@ -32,10 +32,13 @@ public class MyClientActivity extends AppCompatActivity {
     private TextView mIpAddress;
     private EditText mSendMessageEdit;
     private boolean mIsWifiEnable;
+    private EditText ipEdt;
     private Button mSendBtn;
     private Button mStartConnectBtn;
     private String ipStr;
     private TextView mReceveMesFromServicerText;
+
+    private String mIpStr;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -50,6 +53,7 @@ public class MyClientActivity extends AppCompatActivity {
         mSendMessageEdit = findViewById(R.id.message_edit);
         mIsWifiEnable = WifiInfoUtil.isWifiEnabled(this);
         mSendBtn = findViewById(R.id.send_message_toservice_btn);
+        ipEdt = findViewById(R.id.ip_server);
         mStartConnectBtn = findViewById(R.id.start_connect_btn);
         mReceveMesFromServicerText = findViewById(R.id.receve_message_from_service__text);
 
@@ -77,16 +81,21 @@ public class MyClientActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 isKeepHeartBeat = true;
-                connectService();
+                if (!TextUtils.isEmpty(ipEdt.getText())) {
+                    connectService(ipEdt.getText().toString());
+                } else {
+                    Toast.makeText(MyClientActivity.this, "请输入服务端的ip地址再连接！", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
     }
 
-    private void connectService() {
+    private void connectService(String ipStr) {
         try {
-            ipStr = "192.168.43.153";
-            socket = new Socket(ipStr, 9999);
+//            ipStr = "192.168.43.153";
+            mIpStr = ipStr;
+            socket = new Socket(mIpStr, 9999);
 //            socket.setSoTimeout(50000);
             Log.d(TAG, "与服务器建立连接：" + socket);
             String str = "与服务器建立连接：" + socket;
@@ -221,7 +230,7 @@ public class MyClientActivity extends AppCompatActivity {
                     socket.close();
                     socket = null;
                     //然后尝试重连
-                    connectService();
+                    connectService(mIpStr);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }

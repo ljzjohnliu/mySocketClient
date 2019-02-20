@@ -1,4 +1,4 @@
-package com.zd.mysocketclient;
+package com.socket.client;
 
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
@@ -9,6 +9,7 @@ import android.widget.Button;
 public class MainActivity extends AppCompatActivity {
 
     private Button mClientBtn;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -17,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
         mClientBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this,MyClientActivity.class);
+                Intent intent = new Intent(MainActivity.this, MyClientActivity.class);
                 startActivity(intent);
             }
         });

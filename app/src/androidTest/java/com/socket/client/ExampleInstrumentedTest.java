@@ -1,4 +1,4 @@
-package com.zd.mysocketclient;
+package com.socket.client;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

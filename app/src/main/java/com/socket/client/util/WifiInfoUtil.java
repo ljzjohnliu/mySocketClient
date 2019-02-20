@@ -1,4 +1,4 @@
-package com.zd.mysocketclient.util;
+package com.socket.client.util;
 
 import android.content.Context;
 import android.net.ConnectivityManager;

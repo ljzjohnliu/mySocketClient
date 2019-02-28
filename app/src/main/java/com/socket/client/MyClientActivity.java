@@ -18,6 +18,7 @@ import com.socket.client.util.WifiInfoUtil;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
@@ -102,11 +103,13 @@ public class MyClientActivity extends AppCompatActivity {
 //            Toast.makeText(MyClientActivity.this, str, Toast.LENGTH_LONG).show();
             Log.d(TAG, "connectService, socket.isConnected ： " + socket.isConnected());
             if (socket.isConnected()) {
-                keepHeartBeat();
+//                keepHeartBeat();
 //                recvProtobufMsg();
 //            recvStringMsg();
             }
-            initView(socket);
+//            initView(socket);
+            //模拟粘包情况下 分包
+            initViewTest2(socket);
         } catch (UnknownHostException e) {
             Log.e(TAG, "connectService: UnknownHostException e = " + e);
             e.printStackTrace();
@@ -121,21 +124,18 @@ public class MyClientActivity extends AppCompatActivity {
      */
     public void sendToServiceMessage() {
         try {
-            // socket.getInputStream()
-            Log.d(TAG, "sendToServiceMessage: socket = " + socket);
-            Log.d(TAG, "sendToServiceMessage: socket.isConnected = " + socket.isConnected());
-            Log.d(TAG, "sendToServiceMessage: socket.isInputShutdown = " + socket.isInputShutdown());
-            Log.d(TAG, "sendToServiceMessage: socket.isOutputShutdown = " + socket.isOutputShutdown());
-            Log.d(TAG, "sendToServiceMessage: socket.isClosed = " + socket.isClosed());
+            Log.d(TAG, "sendToServiceMessage: socket = " + socket + ", socket.isConnected = " + socket.isConnected());
 //            socket.setKeepAlive(true);
             DataOutputStream writer = new DataOutputStream(socket.getOutputStream());
             Log.d(TAG, "sendToServiceMessage: writer = " + writer);
             String sendStr = mSendMessageEdit.getText().toString();
             Log.d(TAG, "sendToServiceMessage: sendStr = " + sendStr);
             if (TextUtils.isEmpty(sendStr)) {
-                writer.writeUTF("嘿嘿，你好啊，服务器.."); // 写一个UTF-8的信息
+                // 写一个UTF-8的信息
+                writer.writeUTF("嘿嘿，你好啊，服务器..");
             } else {
-                writer.writeUTF(sendStr); // 写一个UTF-8的信息
+                // 写一个UTF-8的信息
+                writer.writeUTF(sendStr);
             }
             Toast.makeText(MyClientActivity.this, "发送消息", Toast.LENGTH_LONG).show();
         } catch (IOException e) {
@@ -171,6 +171,103 @@ public class MyClientActivity extends AppCompatActivity {
         }).start();
     }
 
+    //用该方法接受数据可以复现粘包情况
+    private void initViewTest(final Socket socket) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int count = 0;
+                while (true) {
+                    try {
+                        byte[] byteBuffer = new byte[50];
+                        StringBuffer receivBuffer = new StringBuffer();
+                        InputStream reader = socket.getInputStream();
+                        count = reader.read(byteBuffer);
+                        if (count > 0) {
+                            receivBuffer.append(new String(byteBuffer, 0, count));
+                            Log.d(TAG, "initViewTest, receive data from client:" + receivBuffer.toString());
+                        }
+                        count = 0;
+                    } catch (IOException e) {
+                        Log.e(TAG, "initViewTest, run: e = " + e);
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    //用该方法接受数据 实现分包
+    private void initViewTest2(final Socket socket) {
+        Log.d(TAG, "initViewTest2: socket = " + socket);
+        new Thread(new Runnable() {
+            public static final int PACKET_HEAD_LENGTH=2;//包头长度
+            private volatile byte[] bytes = new byte[0];
+
+            @Override
+            public void run() {
+                int count =0;
+                while (true) {
+                    try {
+                        InputStream reader = socket.getInputStream();
+                        if (bytes.length < PACKET_HEAD_LENGTH) {
+                            byte[] head = new byte[PACKET_HEAD_LENGTH - bytes.length];
+                            int couter = reader.read(head);
+                            if (couter < 0) {
+                                continue;
+                            }
+                            bytes = mergebyte(bytes, head, 0, couter);
+                            if (couter < PACKET_HEAD_LENGTH) {
+                                continue;
+                            }
+                        }
+                        // 下面这个值请注意，一定要取2长度的字节子数组作为报文长度，你懂得
+                        byte[] temp = new byte[0];
+                        temp = mergebyte(temp, bytes, 0, PACKET_HEAD_LENGTH);
+                        String templength = new String(temp);
+                        int bodylength = Integer.parseInt(templength);//包体长度
+                        Log.d(TAG, "initViewTest2, receive 第" + count + "条消息：bodylength = " + bodylength);
+                        if (bytes.length - PACKET_HEAD_LENGTH < bodylength) {//不够一个包
+                            byte[] body = new byte[bodylength + PACKET_HEAD_LENGTH - bytes.length];//剩下应该读的字节(凑一个包)
+                            int couter = reader.read(body);
+                            if (couter < 0) {
+                                continue;
+                            }
+                            bytes = mergebyte(bytes, body, 0, couter);
+                            if (couter < body.length) {
+                                continue;
+                            }
+                        }
+                        byte[] body = new byte[0];
+                        body = mergebyte(body, bytes, PACKET_HEAD_LENGTH, bytes.length);
+                        count++;
+                        Log.d(TAG, "initViewTest2, receive 第" + count + "条消息：body = " + new String(body));
+                        Message mMessage = new Message();
+                        mMessage.what = 1;
+                        mMessage.obj = new String(body);
+                        handler.sendMessage(mMessage);
+                        bytes = new byte[0];
+                    } catch (Exception e) {
+                        Log.e(TAG, "initViewTest2, run: e = " + e);
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public byte[] mergebyte(byte[] a, byte[] b, int begin, int end) {
+        byte[] add = new byte[a.length + end - begin];
+        int i = 0;
+        for (i = 0; i < a.length; i++) {
+            add[i] = a[i];
+        }
+        for (int k = begin; k < end; k++, i++) {
+            add[i] = b[k];
+        }
+        return add;
+    }
+
     Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -186,7 +283,7 @@ public class MyClientActivity extends AppCompatActivity {
     //开启心跳检测
     boolean isKeepHeartBeat = false;
 
-    private final int HEARTBEART_PERIOD = 6 * 1000;
+    private final int HEARTBEART_PERIOD = 30 * 1000;
     ScheduledExecutorService executor;//定位定时器
     HeartBeatTask mHeartBeatTask;
     /**

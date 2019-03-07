@@ -108,6 +108,7 @@ public class MyClientActivity extends AppCompatActivity {
 //            recvStringMsg();
             }
 //            initView(socket);
+//            initViewTest(socket);
             //模拟粘包情况下 分包
             initViewTest2(socket);
         } catch (UnknownHostException e) {
@@ -208,15 +209,21 @@ public class MyClientActivity extends AppCompatActivity {
             public void run() {
                 int count =0;
                 while (true) {
+                    Log.d(TAG, "run: --------------------1111111111----------------");
                     try {
                         InputStream reader = socket.getInputStream();
+                        Log.d(TAG, "run: -----------------222222222-------------------");
                         if (bytes.length < PACKET_HEAD_LENGTH) {
+                            Log.d(TAG, "run: -----------------22221111-------------------");
                             byte[] head = new byte[PACKET_HEAD_LENGTH - bytes.length];
+                            Log.d(TAG, "run: -----------------222221122-------------------");
                             int couter = reader.read(head);
+                            Log.d(TAG, "run: -----------------333333333-------------------couter = " + couter);
                             if (couter < 0) {
                                 continue;
                             }
                             bytes = mergebyte(bytes, head, 0, couter);
+                            Log.d(TAG, "run: -----------------4444444444-------------------couter = " + couter);
                             if (couter < PACKET_HEAD_LENGTH) {
                                 continue;
                             }
@@ -227,21 +234,29 @@ public class MyClientActivity extends AppCompatActivity {
                         String templength = new String(temp);
                         int bodylength = Integer.parseInt(templength);//包体长度
                         Log.d(TAG, "initViewTest2, receive 第" + count + "条消息：bodylength = " + bodylength);
+                        Log.d(TAG, "initViewTest2, receive bytes.length = " + bytes.length + ", PACKET_HEAD_LENGTH = " + PACKET_HEAD_LENGTH);
                         if (bytes.length - PACKET_HEAD_LENGTH < bodylength) {//不够一个包
+                            Log.d(TAG, "不够一个包  ");
                             byte[] body = new byte[bodylength + PACKET_HEAD_LENGTH - bytes.length];//剩下应该读的字节(凑一个包)
+                            Log.d(TAG, "剩下应该读的字节(凑一个包) ");
                             int couter = reader.read(body);
+                            Log.d(TAG, "doInBackground:  剩下应该读的字节(凑一个包) couter 长度" + couter);
                             if (couter < 0) {
+                                Log.d(TAG, "doInBackground:  couter 小于零");
                                 continue;
                             }
                             bytes = mergebyte(bytes, body, 0, couter);
+                            Log.d(TAG, "doInBackground:  数据放入 bytes里, bytes.length = " + bytes.length);
+                            Log.d(TAG, "doInBackground:  数据放入 bytes里, couter = " + couter + ", body.length = " + body.length);
                             if (couter < body.length) {
+                                Log.d(TAG, "doInBackground:  couter 小于零");
                                 continue;
                             }
                         }
                         byte[] body = new byte[0];
                         body = mergebyte(body, bytes, PACKET_HEAD_LENGTH, bytes.length);
-                        count++;
                         Log.d(TAG, "initViewTest2, receive 第" + count + "条消息：body = " + new String(body));
+                        count++;
                         Message mMessage = new Message();
                         mMessage.what = 1;
                         mMessage.obj = new String(body);
